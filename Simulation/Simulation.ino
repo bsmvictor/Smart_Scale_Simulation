@@ -23,13 +23,59 @@ float consumptionRate = 0.3;
 bool highConsumption = false;
 bool gasLeak = false;
 
+// Limite para identificar um vazamento
+const float leakThreshold = 4.0;  // Taxa acima disso é considerada vazamento
+
+// Pinos virtuais
+const int leakAlertLed = V3;  // LED de alerta visual
+const int valveControlPin = V4;  // Switch para controle da válvula
+const int leakSimulationPin = V2;  // Switch para simular vazamento
+
+// Variável para estado da válvula
+bool valveClosed = false;
+
 // Funções para controlar os estados pelo Blynk
 BLYNK_WRITE(V1) {                   // Botão para alta taxa de consumo
   highConsumption = param.asInt();  // Ativado quando o botão está pressionado
 }
 
-BLYNK_WRITE(V2) {           // Botão para simular vazamento
-  gasLeak = param.asInt();  // Ativado quando o botão está pressionado
+BLYNK_WRITE(V2) {           // Switch para simular vazamento
+  gasLeak = param.asInt();  // Ativado quando o switch está ligado
+  if (gasLeak) {
+    Serial.println("Simulação de vazamento ativada!");
+    closeValve();  // Fecha a válvula automaticamente
+    Blynk.virtualWrite(leakSimulationPin, 0);  // Desliga o switch do vazamento
+  }
+}
+
+BLYNK_WRITE(V4) {  // Switch no painel para controle manual da válvula
+  valveClosed = param.asInt();
+  if (valveClosed) {
+    Serial.println("Válvula fechada manualmente.");
+  } else {
+    Serial.println("Válvula aberta manualmente.");
+    gasLeak = false;  // Certifica-se de que o estado de vazamento é desativado
+  }
+}
+
+// Função para piscar o LED de alerta
+void blinkLeakAlert() {
+  for (int i = 0; i < 5; i++) {
+    Blynk.virtualWrite(leakAlertLed, 255);  // Liga o LED
+    delay(500);                            // Aguarda 500 ms
+    Blynk.virtualWrite(leakAlertLed, 0);   // Desliga o LED
+    delay(500);                            // Aguarda 500 ms
+  }
+}
+
+// Função para fechar a válvula
+void closeValve() {
+  if (!valveClosed) {  // Fecha a válvula somente se ainda estiver aberta
+    valveClosed = true;
+    Blynk.virtualWrite(valveControlPin, 1);  // Atualiza o estado do switch no painel
+    Serial.println("Válvula fechada automaticamente devido a vazamento!");
+    blinkLeakAlert();  // Pisca o LED de alerta
+  }
 }
 
 void setup() {
@@ -45,18 +91,18 @@ void loop() {
   // Mantém a conexão com o Blynk
   Blynk.run();
 
-  // Verifica se 1 minuto se passou
+  // Verifica se o intervalo passou
   if (millis() - lastUpdate >= updateInterval) {
     lastUpdate = millis();
 
     // Determina a taxa de consumo com base no estado
     float currentRate = consumptionRate;
 
-    if (highConsumption) {
+    if (valveClosed) {
+      currentRate = 0;  // Consumo para quando a válvula está fechada
+    } else if (highConsumption) {
       currentRate *= 3;  // Aumenta o consumo 3 vezes
-    }
-
-    if (gasLeak) {
+    } else if (gasLeak) {
       currentRate = 5.0;  // Consumo muito rápido por vazamento
     }
 
