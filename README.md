@@ -3,6 +3,9 @@
 
 Este projeto implementa um sistema de monitoramento do nível de gás de um botijão utilizando um ESP8266 e a plataforma Blynk. O sistema pode detectar vazamentos, simular altos consumos de gás, e controlar uma válvula para cortar a distribuição de gás de maneira automática.
 
+## Apresentação:
+    https://www.canva.com/design/DAGYFG_ehuU/Ywtc64XzreBzZWzHikCqFQ/edit?utm_content=DAGYFG_ehuU&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton
+
 ## Funcionalidades
 
 - Monitoramento do Nível de Gás: O nível do botijão de gás é monitorado e atualizado no painel do Blynk a cada 10 segundos.
